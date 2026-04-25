@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  velux-bridge:
+    build: .
+    container_name: hmip-velux-bridge
+    restart: unless-stopped
+    ports:
+      - "7070:7070"
+    volumes:
+      # Persistente Konfiguration (überdauert Container-Neustarts)
+      - velux-data:/app/data
+    environment:
+      - NODE_ENV=production
+    # Netzwerk-Zugriff auf HCU (lokales Netzwerk erforderlich)
+    network_mode: host
+    # Alternativ mit Bridge-Netzwerk:
+    # networks:
+    #   - bridge_net
+
+volumes:
+  velux-data:
+    driver: local
+
+# networks:
+#   bridge_net:
+#     driver: bridge

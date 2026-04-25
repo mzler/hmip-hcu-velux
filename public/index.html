@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velux KIG 300 ↔ Homematic HCU Bridge</title>
+  <meta name="description" content="Bridge-Konfiguration: Velux Active → Homematic IP HCU" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0d1117; --surface:#161b22; --surface2:#21262d;
+      --border:#30363d; --accent:#58a6ff; --green:#3fb950;
+      --warn:#f0883e; --danger:#f85149; --text:#e6edf3;
+      --muted:#8b949e; --radius:12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+
+    header{background:linear-gradient(135deg,#1c2333,#0d1117);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:.75rem}
+    .logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#1f6feb,#388bfd);display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 0 16px rgba(56,139,253,.4)}
+    h1{font-size:1.15rem;font-weight:700}
+    h1 span{color:var(--accent)}
+
+    .status-bar{display:flex;gap:.75rem;align-items:center;padding:.55rem 2rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.8rem}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .7rem;border-radius:20px;font-size:.75rem;font-weight:500}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .ok{background:rgba(63,185,80,.15);color:var(--green)} .ok .dot{background:var(--green);animation:p 2s infinite}
+    .err{background:rgba(248,81,73,.15);color:var(--danger)} .err .dot{background:var(--danger)}
+    .warn{background:rgba(240,136,62,.15);color:var(--warn)} .warn .dot{background:var(--warn)}
+    @keyframes p{0%,100%{opacity:1}50%{opacity:.4}}
+
+    main{max-width:1000px;margin:2rem auto;padding:0 1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+    @media(max-width:720px){main{grid-template-columns:1fr}}
+    .full{grid-column:1/-1}
+
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;transition:border-color .2s}
+    .card:hover{border-color:#444c56}
+    .ch{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+    .ci{font-size:1.15rem}
+    .ct{font-size:1rem;font-weight:600}
+
+    .info-box{background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.25);border-radius:8px;padding:.85rem 1rem;margin-bottom:1rem;font-size:.82rem;color:var(--accent);line-height:1.6}
+    .info-box strong{display:block;margin-bottom:.2rem}
+
+    .field{margin-bottom:1rem}
+    label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.4rem;font-weight:500}
+    input{width:100%;padding:.6rem .9rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;font-family:inherit;transition:border-color .2s,box-shadow .2s}
+    input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(88,166,255,.15)}
+
+    .btn-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
+    button{padding:.55rem 1.2rem;border:none;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:.4rem}
+    .btn-p{background:var(--accent);color:#0d1117} .btn-p:hover{background:#79b8ff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(88,166,255,.3)}
+    .btn-s{background:var(--green);color:#0d1117}  .btn-s:hover{background:#56d364;transform:translateY(-1px)}
+    .btn-w{background:var(--warn);color:#0d1117}   .btn-w:hover{background:#ffb672;transform:translateY(-1px)}
+    .btn-g{background:var(--surface2);color:var(--text);border:1px solid var(--border)} .btn-g:hover{border-color:var(--accent);color:var(--accent)}
+    button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+
+    .devices-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.82rem}
+    th{text-align:left;padding:.5rem .75rem;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)}
+    td{padding:.55rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--surface2)}
+    .pill{display:inline-block;padding:.15rem .55rem;border-radius:6px;font-size:.72rem;font-weight:600}
+    .NXO{background:rgba(88,166,255,.15);color:var(--accent)}
+    .NXD,.NXVDE{background:rgba(63,185,80,.15);color:var(--green)}
+    .NXG{background:rgba(240,136,62,.15);color:var(--warn)}
+
+    .ctrl-row{display:flex;align-items:center;gap:.5rem}
+    input[type=range]{width:90px;padding:0;border:none;background:transparent;cursor:pointer;accent-color:var(--accent)}
+    .cv{width:36px;text-align:right;font-variant-numeric:tabular-nums;font-size:.8rem}
+    .btn-sm{padding:.25rem .6rem;font-size:.72rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;transition:all .15s}
+    .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+
+    .log{background:#010409;border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;height:200px;overflow-y:auto;font-family:'SF Mono','Fira Code',monospace;font-size:.78rem;line-height:1.7}
+    .ll{display:flex;gap:.5rem}
+    .lt{color:var(--muted);flex-shrink:0}
+    .li{color:var(--accent)} .ls{color:var(--green)} .le{color:var(--danger)} .lw{color:var(--warn)}
+
+    #tc{position:fixed;bottom:1.5rem;right:1.5rem;display:flex;flex-direction:column;gap:.5rem;z-index:9999}
+    .toast{padding:.75rem 1.25rem;border-radius:10px;font-size:.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:si .3s ease;max-width:320px}
+    .tok{background:#1a3d22;border:1px solid var(--green);color:var(--green)}
+    .terr{background:#3d1a1a;border:1px solid var(--danger);color:var(--danger)}
+    .tinf{background:#1a2d3d;border:1px solid var(--accent);color:var(--accent)}
+    @keyframes si{from{transform:translateX(120%)}to{transform:translateX(0)}}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🪟</div>
+  <div>
+    <h1>Velux KIG 300 ↔ <span>Homematic HCU</span> Bridge</h1>
+    <div style="font-size:.72rem;color:var(--muted)">Konfiguration auch direkt im HCU-Plugin-Menü möglich</div>
+  </div>
+</header>
+
+<div class="status-bar">
+  <span id="b-hcu" class="badge err"><span class="dot"></span> HCU WebSocket</span>
+  <span id="b-velux" class="badge warn"><span class="dot"></span> Velux Token</span>
+  <span id="dev-count" style="margin-left:auto;color:var(--muted);font-size:.78rem">— Geräte</span>
+</div>
+
+<main>
+
+  <!-- HCU -->
+  <div class="card">
+    <div class="ch"><span class="ci">🔌</span><span class="ct">Homematic IP HCU</span></div>
+    <div class="info-box">
+      <strong>💡 Tipp – Konfiguration im HCU-Menü</strong>
+      Velux-Zugangsdaten können auch direkt in der Homematic-App oder in HCUweb
+      unter <em>Plugins → Velux KIG 300 Bridge → Einstellungen</em> eingegeben werden –
+      ohne dieses Web-UI.
+    </div>
+    <div class="field"><label for="hcu-host">HCU Hostname / IP</label><input id="hcu-host" placeholder="192.168.1.10" /></div>
+    <div class="field"><label for="hcu-port">Port (Standard: 9292 lokal / 9001 Container)</label><input id="hcu-port" type="number" placeholder="9292" /></div>
+    <div class="field"><label for="hcu-token">HCU Connect API Token</label><input id="hcu-token" type="password" placeholder="Ihr HCU-Token" autocomplete="off" /></div>
+    <div class="btn-row"><button class="btn-p" onclick="saveHcu()">💾 Speichern &amp; Verbinden</button></div>
+  </div>
+
+  <!-- Velux -->
+  <div class="card">
+    <div class="ch"><span class="ci">☁️</span><span class="ct">Velux-Active-Konto</span></div>
+    <div class="info-box">
+      <strong>Kein Developer-Account nötig</strong>
+      Nur Ihre reguläre Velux-App-E-Mail und Ihr Passwort – die API-Zugangsdaten
+      der offiziellen App werden automatisch verwendet.
+    </div>
+    <div class="field"><label for="v-user">E-Mail-Adresse (Velux Active Konto)</label><input id="v-user" type="email" placeholder="name@example.com" /></div>
+    <div class="field"><label for="v-pass">Passwort</label><input id="v-pass" type="password" placeholder="••••••••" autocomplete="off" /></div>
+    <div class="btn-row">
+      <button class="btn-p" onclick="saveVelux()">💾 Speichern</button>
+      <button class="btn-s" id="btn-auth" onclick="testAuth()">🔑 Anmelden &amp; testen</button>
+      <button class="btn-w" id="btn-disc" onclick="discoverDevices()">🔍 Geräte suchen</button>
+    </div>
+  </div>
+
+  <!-- Devices -->
+  <div class="card full">
+    <div class="ch">
+      <span class="ci">🪟</span><span class="ct">Velux-Geräte</span>
+      <button class="btn-g" style="margin-left:auto;padding:.3rem .8rem;font-size:.78rem" onclick="discoverDevices()">⟳ Sync</button>
+    </div>
+    <div class="devices-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Typ</th><th>Modul-ID</th><th>HCU-Gerät</th><th>Manuell steuern</th></tr></thead>
+        <tbody id="dtbody">
+          <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">
+            Noch keine Geräte – bitte Velux-Login konfigurieren und "Geräte suchen" klicken.
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card full">
+    <div class="ch">
+      <span class="ci">📋</span><span class="ct">Live-Log</span>
+      <button class="btn-g" style="margin-left:auto;padding:.3rem .8rem;font-size:.78rem" onclick="$('log').innerHTML=''">🗑 Leeren</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+</main>
+<div id="tc"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function toast(msg, t='tinf') {
+  const el = document.createElement('div');
+  el.className = `toast ${t}`;
+  el.textContent = msg;
+  $('tc').appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+function log(msg, cls='li') {
+  const div = document.createElement('div');
+  div.className = 'll';
+  const t = new Date().toLocaleTimeString('de-DE');
+  div.innerHTML = `<span class="lt">${t}</span><span class="${cls}">${esc(msg)}</span>`;
+  const el = $('log');
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function dis(id, v) { const b=$(id); if(b) b.disabled=v; }
+
+async function api(m, u, b) {
+  const o = {method:m, headers:{'Content-Type':'application/json'}};
+  if(b) o.body = JSON.stringify(b);
+  const r = await fetch(u,o);
+  return r.json();
+}
+
+async function loadConfig() {
+  try {
+    const c = await api('GET','/api/config');
+    $('hcu-host').value  = c.hcu.host || '';
+    $('hcu-port').value  = c.hcu.port || 9292;
+    $('hcu-token').value = c.hcu.tokenConfigured ? '••••••••••••' : '';
+    $('v-user').value    = c.velux.username || '';
+    updateBadges(c.wsConnected, c.velux.tokenValid, c.velux.deviceCount);
+    if(c.velux.devices?.length > 0) renderDevices(c.velux.devices);
+  } catch(e) { log('Konfig konnte nicht geladen werden: '+e.message,'le'); }
+}
+
+function updateBadges(ws, vt, dc) {
+  const hb = $('b-hcu');
+  hb.className='badge '+(ws?'ok':'err');
+  hb.innerHTML=`<span class="dot"></span> HCU ${ws?'verbunden ✓':'getrennt ✗'}`;
+  const vb=$('b-velux');
+  vb.className='badge '+(vt?'ok':'warn');
+  vb.innerHTML=`<span class="dot"></span> Velux Token ${vt?'gültig':'ausstehend'}`;
+  $('dev-count').textContent=`${dc??0} Gerät(e)`;
+}
+
+async function saveHcu() {
+  dis('hcu-save',true);
+  try {
+    const t = $('hcu-token').value;
+    const r = await api('POST','/api/config/hcu',{
+      host:$('hcu-host').value.trim(),
+      port:$('hcu-port').value,
+      token: t==='••••••••••••' ? undefined : t,
+    });
+    toast(r.message||'Gespeichert', r.success?'tok':'terr');
+    log('HCU-Konfiguration gespeichert.','ls');
+  } catch(e){toast(e.message,'terr');}
+  finally{dis('hcu-save',false);}
+}
+
+async function saveVelux() {
+  try {
+    const p=$('v-pass').value;
+    const r=await api('POST','/api/config/velux',{
+      username:$('v-user').value.trim(),
+      password:p==='••••••••'?undefined:p,
+    });
+    toast(r.message||'Gespeichert',r.success?'tok':'terr');
+    log('Velux-Zugangsdaten gespeichert.','ls');
+  } catch(e){toast(e.message,'terr');}
+}
+
+async function testAuth() {
+  dis('btn-auth',true);
+  log('Teste Velux-Authentifizierung...','li');
+  try {
+    const r=await api('POST','/api/velux/auth');
+    if(r.success){
+      toast('Anmeldung erfolgreich ✓','tok');
+      log('Velux-Token erhalten ✓','ls');
+    } else {
+      toast('Fehler: '+r.error,'terr');
+      log('Auth-Fehler: '+r.error,'le');
+    }
+    loadConfig();
+  } catch(e){toast(e.message,'terr');}
+  finally{dis('btn-auth',false);}
+}
+
+async function discoverDevices() {
+  dis('btn-disc',true);
+  log('Suche Velux-Geräte...','li');
+  try {
+    const r=await api('POST','/api/velux/discover');
+    if(r.success){
+      toast(`${r.devices?.length??0} Gerät(e) gefunden ✓`,'tok');
+      log(`${r.devices?.length??0} Gerät(e) gefunden und bei HCU registriert.`,'ls');
+      renderDevices(r.devices);
+      loadConfig();
+    } else {
+      toast('Fehler: '+r.error,'terr');
+      log('Gerätesuche fehlgeschlagen: '+r.error,'le');
+    }
+  } catch(e){toast(e.message,'terr');}
+  finally{dis('btn-disc',false);}
+}
+
+function renderDevices(devices) {
+  const tbody = $('dtbody');
+  if(!devices?.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Keine Geräte gefunden.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = devices.map((d,i) => {
+    const isWin = d.type==='NXD'||d.type==='NXVDE';
+    const icon  = isWin?'🪟':'🔲';
+    const hcuId = `velux-${d.id}`;
+    return `<tr>
+      <td>${icon} ${esc(d.name)}</td>
+      <td><span class="pill ${d.type}">${d.type}</span></td>
+      <td style="font-family:monospace;font-size:.75rem">${esc(d.id)}</td>
+      <td style="font-family:monospace;font-size:.75rem;color:var(--accent)">${esc(hcuId)}</td>
+      <td>
+        <div class="ctrl-row">
+          <input type="range" min="0" max="100" value="0" id="r${i}" oninput="$('v${i}').textContent=this.value+'%'"/>
+          <span class="cv" id="v${i}">0%</span>
+          <button class="btn-sm" onclick="ctrl(${i},'${d.id}','${d.bridge}')">▶</button>
+          <button class="btn-sm" title="Schließen" onclick="setPos(${i},'${d.id}','${d.bridge}',0)">▼</button>
+          <button class="btn-sm" title="Öffnen"    onclick="setPos(${i},'${d.id}','${d.bridge}',100)">▲</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function ctrl(i,moduleId,bridgeId) {
+  const pos=parseInt($(`r${i}`).value,10);
+  const r=await api('POST','/api/velux/control',{moduleId,bridgeId,position:pos});
+  if(r.success){toast(`${pos}% gesetzt ✓`,'tok');}
+  else{toast('Fehler: '+r.error,'terr');}
+}
+async function setPos(i,moduleId,bridgeId,pos) {
+  $(`r${i}`).value=pos; $(`v${i}`).textContent=pos+'%';
+  await ctrl(i,moduleId,bridgeId);
+}
+
+// SSE
+function startSSE(){
+  const es=new EventSource('/api/events');
+  es.addEventListener('connection',e=>{
+    const d=JSON.parse(e.data);
+    const b=$('b-hcu');
+    b.className='badge '+(d.connected?'ok':'err');
+    b.innerHTML=`<span class="dot"></span> HCU ${d.connected?'verbunden ✓':'getrennt ✗'}`;
+    log(`HCU WebSocket: ${d.connected?'verbunden ✓':'getrennt ✗'}`,d.connected?'ls':'lw');
+  });
+  es.addEventListener('log',e=>{const d=JSON.parse(e.data);log(d.msg,d.level==='error'?'le':d.level==='success'?'ls':d.level==='warn'?'lw':'li');});
+  es.addEventListener('devices',e=>{const d=JSON.parse(e.data);renderDevices(d.devices);$('dev-count').textContent=`${d.devices.length} Gerät(e)`;});
+  es.onerror=()=>log('SSE-Verbindung unterbrochen...','lw');
+}
+
+loadConfig();
+startSSE();
+log('Bridge-UI bereit.','li');
+</script>
+</body>
+</html>

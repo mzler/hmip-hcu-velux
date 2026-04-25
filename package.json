@@ -1,0 +1,23 @@
+{
+  "name": "hmip-hcu-velux-bridge",
+  "version": "1.0.0",
+  "description": "Homematic IP HCU Bridge für Velux KIG 300 / Netatmo-API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "express": "^4.18.3",
+    "ws": "^8.16.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
