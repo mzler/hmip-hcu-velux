@@ -57,6 +57,10 @@ function send(message) {
  */
 function sendConfigTemplate(requestId) {
   const velux = getSection('velux');
+  
+  const deviceListStr = velux.devices && velux.devices.length > 0 
+    ? velux.devices.map(d => `${d.name} (${d.type})`).join(', ') 
+    : 'Noch keine Geräte (bitte Zugangsdaten speichern)';
 
   const response = {
     pluginId: PLUGIN_ID,
@@ -73,6 +77,11 @@ function sendConfigTemplate(requestId) {
           friendlyName: 'Erweitert',
           description:  'Optionale Felder – nur ändern falls nötig',
           order: 2,
+        },
+        devicesGroup: {
+          friendlyName: 'Erkannte Velux-Geräte',
+          description:  'Diese Geräte wurden gefunden und an die HCU gemeldet',
+          order: 3,
         },
       },
       properties: {
@@ -115,6 +124,16 @@ function sendConfigTemplate(requestId) {
           currentValue:  velux.clientSecret ? '••••••••' : '',
           groupId:       'advanced',
           order:         2,
+        },
+        deviceList: {
+          friendlyName:  'Gefundene Geräte',
+          description:   'Wird nach Eingabe der Zugangsdaten und Aktualisierung angezeigt',
+          dataType:      'STRING',
+          required:      'false',
+          maximumLength: 1000,
+          currentValue:  deviceListStr,
+          groupId:       'devicesGroup',
+          order:         1,
         },
       },
     },
