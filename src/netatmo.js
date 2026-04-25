@@ -116,12 +116,15 @@ async function fetchHomesData() {
   const token = await getValidToken();
   // Velux API throws 500 if the brackets in [NXG] are URL-encoded (%5B...%5D).
   // We must bypass URLSearchParams and construct the raw string exactly as curl does.
-  const payload = `access_token=${token}&gateway_types=[NXG]`;
-
   let response;
   try {
-    response = await axios.post(`${API_BASE}/homesdata`, payload, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    // We omit gateway_types completely to avoid any syntax/parser crashes on Velux's side.
+    // Also adding Authorization header just in case.
+    response = await axios.post(`${API_BASE}/homesdata`, `access_token=${token}`, {
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${token}`
+      },
       timeout: 15000,
     });
   } catch (err) {

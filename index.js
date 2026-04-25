@@ -20,7 +20,7 @@ const { getSection, updateSection } = require('./src/storage');
 
 console.log('╔══════════════════════════════════════════╗');
 console.log('║   Velux KIG 300 ↔ Homematic HCU Bridge  ║');
-console.log('║          Version 1.0.3                   ║');
+console.log('║          Version 1.0.4                   ║');
 console.log('╚══════════════════════════════════════════╝');
 
 // ── HCU-Container-Erkennung ─────────────────────────────────────────────────
