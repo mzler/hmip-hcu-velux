@@ -187,6 +187,7 @@ function buildDeviceRegistration(device) {
     id:       uuidv4(),
     type:     'DISCOVER_RESPONSE',
     body: {
+      success: true,
       devices: [{
         deviceId:    `velux-${device.id}`,
         deviceType:  isWindow ? 'BLIND_ACTUATOR' : 'SHUTTER_ACTUATOR',
@@ -221,7 +222,7 @@ function registerAllDevices() {
     pluginId: PLUGIN_ID,
     id:       uuidv4(),
     type:     'DISCOVER_RESPONSE',
-    body:     { devices: deviceList },
+    body:     { success: true, devices: deviceList },
   });
 
   state.registeredDevices = devices.map((d) => ({
@@ -356,18 +357,6 @@ async function handleControlRequest(msg) {
 
 // ── Verbindungsaufbau ─────────────────────────────────────────────────────────
 
-function registerPlugin() {
-  send({
-    pluginId:    PLUGIN_ID,
-    id:          uuidv4(),
-    type:        'REGISTER_PLUGIN',
-    body: {
-      pluginId:    PLUGIN_ID,
-      displayName: 'Velux KIG 300 Bridge',
-      version:     '1.0.5',
-    },
-  });
-}
 
 function startHeartbeat() {
   stopHeartbeat();
@@ -425,7 +414,6 @@ function connect() {
     state.connected = true;
     console.log('[HCU WS] Verbunden ✓');
     startHeartbeat();
-    registerPlugin();
     if (statusCallback) statusCallback({ type: 'connection', data: { connected: true } });
   });
 
