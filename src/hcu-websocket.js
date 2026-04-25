@@ -364,7 +364,7 @@ function registerPlugin() {
     body: {
       pluginId:    PLUGIN_ID,
       displayName: 'Velux KIG 300 Bridge',
-      version:     '1.0.2',
+      version:     '1.0.3',
     },
   });
 }
