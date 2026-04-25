@@ -1,6 +1,6 @@
 {
   "name": "hmip-hcu-velux-bridge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Homematic IP HCU Bridge für Velux KIG 300 / Netatmo-API",
   "main": "index.js",
   "scripts": {

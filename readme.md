@@ -1,26 +1,135 @@
-# Homematic IP Connect API
+# Velux KIG 300 ↔ Homematic IP HCU Bridge
 
-This repository provides the Homematic IP Connect API, enabling developers to create plugins that integrate seamlessly with the Homematic IP ecosystem. The API allows for extending the functionality of the Homematic IP Home Control Unit (HCU) by supporting third-party devices, custom control, and advanced monitoring capabilities.
+Ein Node.js-Plugin das Velux-Rollladen und Dachfenster (über Velux Active / Netatmo-API) als virtuelle Geräte in der Homematic IP HCU registriert.
 
-## Documentation
+---
 
-For detailed information about the API, including usage, examples, and schema definitions, refer to the full documentation available in the `connect-api-documentation-1.0.1.html` file.
+## Architektur
 
-[Download Documentation](https://github.com/homematicip/connect-api/releases/download/1.0.1/connect-api-documentation-1.0.1.html)
+```
+┌─────────────────┐    WebSocket     ┌─────────────────────┐
+│  Homematic HCU  │◄────────────────►│   HCU-WS-Client     │
+│  (Connect API)  │                  │   (hcu-websocket.js) │
+└─────────────────┘                  └──────────┬──────────┘
+                                                │
+                                     ┌──────────▼──────────┐
+                                     │   netatmo.js         │
+                                     │   OAuth2 + setstate  │
+                                     └──────────┬──────────┘
+                                                │ HTTPS
+                                     ┌──────────▼──────────┐
+                                     │  app.velux-active.com│
+                                     │  (Velux KIG 300)     │
+                                     └─────────────────────┘
+                                                
+┌─────────────────┐    REST/SSE      ┌─────────────────────┐
+│  Browser        │◄────────────────►│   server.js          │
+│  (Web-UI :7070) │                  │   Express + SSE      │
+└─────────────────┘                  └─────────────────────┘
+```
 
+## Datei-Struktur
 
+```
+hmip-hcu-velux/
+├── index.js              # Haupteinstiegspunkt
+├── package.json
+├── Dockerfile
+├── docker-compose.yml
+├── src/
+│   ├── server.js         # Express-Server (Port 7070)
+│   ├── hcu-websocket.js  # HCU Connect API WebSocket-Client
+│   ├── netatmo.js        # Velux Active / Netatmo OAuth2 + API
+│   └── storage.js        # JSON-Persistenz
+├── public/
+│   └── index.html        # Web-Konfigurationsoberfläche
+└── data/
+    └── config.json       # Persistente Konfiguration (auto-erstellt)
+```
 
-## Getting Started
+## Schnellstart
 
-1. Review the full documentation to understand the API's capabilities and structure.
-2. Use the provided examples and libraries to develop your own plugins.
-3. Test your plugins locally or in a containerized environment before deploying them to the HCU.
+### Mit Docker (empfohlen)
 
-## License
+```bash
+# Bauen und starten
+docker compose up -d --build
 
-This project is licensed under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt).
+# Logs
+docker compose logs -f
+```
 
-## Maintainer
+### Lokal (ohne Docker)
 
-Developed and maintained by **eQ-3 AG**.\
-Homematic IP is a trademark of **eQ-3 AG**.
+```bash
+npm install
+npm start
+```
+
+Dann im Browser öffnen: **http://localhost:7070**
+
+---
+
+## Konfiguration
+
+### 1. HCU-Token einrichten
+
+1. In der Homematic App → Einstellungen → Connect API → Token generieren
+2. Token in der Web-UI unter **"Homematic IP HCU"** eintragen
+3. Host = IP-Adresse der HCU im lokalen Netzwerk
+
+### 2. Velux Active / Netatmo-Zugangsdaten
+
+> **Hinweis:** Die Velux Active API ist nicht offiziell für Dritte freigegeben.
+> Die Client-ID und das Client-Secret müssen aus der Velux-Active-App extrahiert werden.
+
+**Bekannte Client-IDs** (können sich ändern):
+- Aus der Android-APK extrahierbar mit Tools wie `apktool`
+- Suche in der Community: [github.com/nougad/velux-cli](https://github.com/nougad/velux-cli)
+
+### 3. Geräte entdecken
+
+1. Nach dem Speichern der Velux-Daten → **"Auth testen"** klicken
+2. Bei Erfolg → **"Geräte suchen"** klicken
+3. Gefundene Geräte werden automatisch als virtuelle Geräte bei der HCU registriert
+
+---
+
+## Gerätetypen in Homematic
+
+| Velux-Typ | Homematic-Typ    | Beschreibung      |
+|-----------|------------------|-------------------|
+| NXO       | SHUTTER_ACTUATOR | Rollladen         |
+| NXD       | BLIND_ACTUATOR   | Dachfenster       |
+| NXVDE     | BLIND_ACTUATOR   | Velux Dachfenster |
+| NXG       | —                | Bridge (intern)   |
+
+## Level-Mapping
+
+```
+HCU Level   Velux Position   Zustand
+    0            0%          Vollständig geschlossen
+   50           50%          Halb offen
+  100          100%          Vollständig geöffnet
+```
+
+---
+
+## Persistenz
+
+Die Konfiguration wird in `data/config.json` gespeichert und überlebt Neustarts.  
+Bei Docker wird das Verzeichnis als Volume gemountet.
+
+## Error-Handling
+
+- **WebSocket**: Automatischer Reconnect mit exponentiellem Backoff (5s → 60s max)
+- **OAuth2**: Automatisches Token-Refresh 5 Minuten vor Ablauf
+- **Velux API**: Fehler werden an HCU gemeldet + im Live-Log angezeigt
+
+---
+
+## Sicherheitshinweise
+
+- Das Plugin läuft im Docker-Container als Non-root-User (`bridge`)
+- Passwörter und Tokens werden lokal in `data/config.json` gespeichert
+- Bei `network_mode: host` hat der Container Zugriff auf das lokale Netzwerk (für HCU-Verbindung nötig)
