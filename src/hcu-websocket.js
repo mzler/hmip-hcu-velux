@@ -213,8 +213,8 @@ function buildDeviceRegistration(device) {
         deviceName:  device.name,
         serialNumber: device.id,
         features: isWindow
-          ? ['SHUTTER_LEVEL', 'SLATS_LEVEL']
-          : ['SHUTTER_LEVEL'],
+          ? [{ type: 'shutterLevel', shutterLevel: 0.0 }, { type: 'slatsLevel', slatsLevel: 0.0 }]
+          : [{ type: 'shutterLevel', shutterLevel: 0.0 }],
       }],
     },
   };
@@ -234,7 +234,7 @@ function registerAllDevices() {
     deviceType:   'WINDOW_COVERING',
     deviceName:   d.name,
     serialNumber: d.id,
-    features:     isWindow(d) ? ['SHUTTER_LEVEL', 'SLATS_LEVEL'] : ['SHUTTER_LEVEL'],
+    features:     isWindow(d) ? [{ type: 'shutterLevel', shutterLevel: 0.0 }, { type: 'slatsLevel', slatsLevel: 0.0 }] : [{ type: 'shutterLevel', shutterLevel: 0.0 }],
   }));
 
   send({
