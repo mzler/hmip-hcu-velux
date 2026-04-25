@@ -33,7 +33,7 @@ LABEL de.eq3.hmip.plugin.metadata=\
 '{\
 	"pluginId": "de.velux.kig300.bridge",\
 	"issuer": "Velux KIG300 Bridge",\
-	"version": "1.0.1",\
+	"version": "1.0.2",\
 	"hcuMinVersion": "1.4.7",\
 	"scope": "CLOUD",\
 	"friendlyName": {\

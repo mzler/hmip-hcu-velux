@@ -146,8 +146,18 @@ async function handleConfigUpdate(msg) {
 
   // Versuche Auth + Geräte-Sync
   try {
-    await netatmo.fetchTokenByPassword();
-    await netatmo.fetchHomesData();
+    try {
+      await netatmo.fetchTokenByPassword();
+    } catch (e) {
+      throw new Error('Netatmo Auth Error: ' + e.message);
+    }
+    
+    try {
+      await netatmo.fetchHomesData();
+    } catch (e) {
+      throw new Error('Netatmo Sync Error: ' + e.message);
+    }
+    
     registerAllDevices();
 
     send({
@@ -157,12 +167,12 @@ async function handleConfigUpdate(msg) {
       body: { status: 'APPLIED', message: 'Zugangsdaten gespeichert. Velux-Geräte wurden synchronisiert.' },
     });
   } catch (err) {
-    console.error('[HCU WS] Config-Auth fehlgeschlagen:', err.message);
+    console.error('[HCU WS] Config-Update fehlgeschlagen:', err.message);
     send({
       pluginId: PLUGIN_ID,
       id,
       type: 'CONFIG_UPDATE_RESPONSE',
-      body: { status: 'FAILED', message: `Login fehlgeschlagen: ${err.message}` },
+      body: { status: 'FAILED', message: `Fehler: ${err.message}` },
     });
   }
 }
@@ -354,7 +364,7 @@ function registerPlugin() {
     body: {
       pluginId:    PLUGIN_ID,
       displayName: 'Velux KIG 300 Bridge',
-      version:     '1.0.1',
+      version:     '1.0.2',
     },
   });
 }

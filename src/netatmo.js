@@ -59,10 +59,16 @@ async function fetchTokenByPassword() {
   });
 
   console.log('[Netatmo] Hole Access-Token (Password Grant)...');
-  const response = await axios.post(TOKEN_URL, params.toString(), {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    timeout: 15000,
-  });
+  let response;
+  try {
+    response = await axios.post(TOKEN_URL, params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 15000,
+    });
+  } catch (err) {
+    const apiError = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    throw new Error(`Token-Request fehlgeschlagen: ${apiError}`);
+  }
 
   const { access_token, refresh_token, expires_in } = response.data;
   const expiresAt = Date.now() + expires_in * 1000;
@@ -110,10 +116,16 @@ async function fetchHomesData() {
   const token = await getValidToken();
   const params = new URLSearchParams({ access_token: token, gateway_types: '[NXG]' });
 
-  const response = await axios.post(`${API_BASE}/homesdata`, params.toString(), {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    timeout: 15000,
-  });
+  let response;
+  try {
+    response = await axios.post(`${API_BASE}/homesdata`, params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 15000,
+    });
+  } catch (err) {
+    const apiError = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    throw new Error(`HomesData-Request fehlgeschlagen: ${apiError}`);
+  }
 
   const homes = response.data?.body?.homes ?? [];
   console.log(`[Netatmo] ${homes.length} Home(s) gefunden.`);
