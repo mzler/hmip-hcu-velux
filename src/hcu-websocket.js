@@ -209,7 +209,7 @@ function buildDeviceRegistration(device) {
       success: true,
       devices: [{
         deviceId:    `velux-${device.id}`,
-        deviceType:  isWindow ? 'BLIND_ACTUATOR' : 'SHUTTER_ACTUATOR',
+        deviceType:  'WINDOW_COVERING',
         deviceName:  device.name,
         serialNumber: device.id,
         features: isWindow
@@ -231,7 +231,7 @@ function registerAllDevices() {
   const isWindow = (d) => d.type === 'NXD' || d.type === 'NXVDE';
   const deviceList = devices.map((d) => ({
     deviceId:     `velux-${d.id}`,
-    deviceType:   isWindow(d) ? 'BLIND_ACTUATOR' : 'SHUTTER_ACTUATOR',
+    deviceType:   'WINDOW_COVERING',
     deviceName:   d.name,
     serialNumber: d.id,
     features:     isWindow(d) ? ['SHUTTER_LEVEL', 'SLATS_LEVEL'] : ['SHUTTER_LEVEL'],
