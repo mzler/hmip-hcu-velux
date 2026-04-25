@@ -385,14 +385,21 @@ function connect() {
     return;
   }
 
-  // Im Container: wss mit internem Cert
+  // Im Container: immer wss auf port 9001
   const protocol = port === 9001 ? 'wss' : 'ws';
-  const url = `${protocol}://${host}:${port}/api/v1/plugin`;
+  const url = `${protocol}://${host}:${port}`;
   console.log(`[HCU WS] Verbinde mit ${url}...`);
 
   try {
     ws = new WebSocket(url, {
-      headers: { Authorization: `hmip-hcu-connect-api ${token}` },
+      // ── Korrekte Header laut HCU Connect API Doku ────────────────────────
+      // https://github.com/homematicip/connect-api → 6.1 WebSocket connection request
+      // Header: authtoken = Token aus /TOKEN-Datei
+      //         plugin-id = Plugin-Identifier aus LABEL
+      headers: {
+        'authtoken':  token,
+        'plugin-id':  PLUGIN_ID,
+      },
       handshakeTimeout: 10000,
       rejectUnauthorized: false,
     });
@@ -401,6 +408,7 @@ function connect() {
     scheduleReconnect();
     return;
   }
+
 
   ws.on('open', () => {
     reconnectAttempt = 0;
