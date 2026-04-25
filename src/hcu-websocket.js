@@ -269,20 +269,13 @@ async function handleMessage(raw) {
 
   switch (msgType) {
     // ── Plugin-Handshake ──────────────────────────────────────────────────
-    case 'PLUGIN_REGISTERED':
-      state.pluginId = msg.pluginId ?? PLUGIN_ID;
-      console.log(`[HCU WS] Plugin registriert: ${state.pluginId}`);
-
-      // Plugin-Status melden
+    case 'PLUGIN_STATE_REQUEST':
       send({
         pluginId: PLUGIN_ID,
-        id: uuidv4(),
+        id: msg.id || uuidv4(),
         type: 'PLUGIN_STATE_RESPONSE',
-        body: { readinessStatus: 'READY' },
+        body: { pluginReadinessStatus: 'READY' },
       });
-
-      // Geräte registrieren
-      registerAllDevices();
       break;
 
     // ── Konfiguration (aus HCU-Menü) ─────────────────────────────────────
@@ -433,9 +426,22 @@ function connect() {
     state.connected = true;
     console.log('[HCU WS] Verbunden ✓');
     startHeartbeat();
-    if (statusCallback) statusCallback({ type: 'connection', data: { connected: true } });
-  });
+    
+    // Initialen Plugin-Status senden
+    send({
+      pluginId: PLUGIN_ID,
+      id: uuidv4(),
+      type: 'PLUGIN_STATE_RESPONSE',
+      body: { pluginReadinessStatus: 'READY' },
+    });
 
+    if (statusCallback) statusCallback({ type: 'connection', data: { connected: true } });
+
+    // Wenn wir schon Daten haben, pushen wir sie ggf. schon mal:
+    if (getSection('oauth').accessToken) {
+      registerAllDevices();
+    }
+  });
   ws.on('message', (data) => handleMessage(data.toString()));
   ws.on('pong', () => {});
   ws.on('close', (code, reason) => {
