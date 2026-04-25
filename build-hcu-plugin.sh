@@ -12,7 +12,7 @@
 set -euo pipefail
 
 IMAGE_NAME="velux-kig300-bridge"
-IMAGE_TAG="1.0.4"
+IMAGE_TAG="1.0.5"
 FULL_TAG="${IMAGE_NAME}:${IMAGE_TAG}"
 OUTPUT_FILE="${IMAGE_NAME}-${IMAGE_TAG}.tar.gz"
 

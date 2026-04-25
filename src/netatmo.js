@@ -118,11 +118,10 @@ async function fetchHomesData() {
   // We must bypass URLSearchParams and construct the raw string exactly as curl does.
   let response;
   try {
-    // We omit gateway_types completely to avoid any syntax/parser crashes on Velux's side.
-    // Also adding Authorization header just in case.
-    response = await axios.post(`${API_BASE}/homesdata`, `access_token=${token}`, {
+    // Variante 3 aus dem Test: JSON-Body leer, Token im Header. Dies liefert 200 OK für KIG 300!
+    response = await axios.post(`${API_BASE}/homesdata`, {}, {
       headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       timeout: 15000,
